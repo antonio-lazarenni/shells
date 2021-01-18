@@ -4,37 +4,37 @@ import { useCanvas } from './ctx/CanvasContext';
 import Canvas from './components/Canvas';
 import { getRandomIntInclusive } from './utils';
 interface Vec2 {
-  x: number,
-  y: number,
+  x: number;
+  y: number;
 }
 
 interface Place {
-  id: string,
-  position: Vec2,
+  id: string;
+  position: Vec2;
 }
 interface Shell {
-  id: number,
-  status: 'open' | 'close',
-  position: Vec2,
-  place: Place['id'],
-  color: string,
+  id: number;
+  status: 'open' | 'close';
+  position: Vec2;
+  place: Place['id'];
+  color: string;
 }
 
 interface Ball {
-  position: Shell['id'],
+  position: Shell['id'];
 }
 
 interface ShuffleState {
-  status: 'ready' | 'swapping' | 'finished',
-  shuffles: [string, string][]
+  status: 'ready' | 'swapping' | 'finished';
+  shuffles: [string, string][];
 }
 
 interface GameState {
-  stage: 'idle' | 'shuffling' | 'guessing' | 'showing_result',
-  shuffle: ShuffleState,
-  shells: Record<string, Shell>,
-  places: Record<string, Place>,
-  ball: Ball,
+  stage: 'idle' | 'shuffling' | 'guessing' | 'showing_result';
+  shuffle: ShuffleState;
+  shells: Record<string, Shell>;
+  places: Record<string, Place>;
+  ball: Ball;
 }
 
 interface GameAction {
@@ -48,8 +48,8 @@ interface GameAction {
   'start_swapping' |
   'stop_swapping' |
   'start_next_swap' |
-  'render_move',
-  payload?: any,
+  'render_move';
+  payload?: any;
 }
 
 const initialState: GameState = {
