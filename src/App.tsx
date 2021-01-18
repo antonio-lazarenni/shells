@@ -47,6 +47,7 @@ interface GameAction {
   'stop_shuffle' |
   'start_swapping' |
   'stop_swapping' |
+  'start_next_swap' |
   'render_move',
   payload?: any,
 }
@@ -148,6 +149,14 @@ function reducer(state: GameState, action: GameAction): GameState {
         shuffle: {
           ...state.shuffle,
           status: 'finished',
+        }
+      }
+    case 'start_next_swap':
+      return {
+        ...state,
+        shuffle: {
+          ...state.shuffle,
+          status: 'ready',
         }
       }
     case 'render_move':
@@ -268,7 +277,7 @@ function App() {
     }
 
     if (distance < 1) {
-      dispatch({ type: 'stop_swapping' });
+      // dispatch({ type: 'stop_swapping' });
       return shell;
     }
 
@@ -283,18 +292,26 @@ function App() {
 
   // Animate
   useEffect(() => {
-    // if (state.shuffle.status === 'swapping') {
-      const newShells = Object.keys(state.shells).reduce<Record<string, Shell>>((acc, key: string) => {
+    if (state.shuffle.status === 'swapping') {
+      const shells = Object.keys(state.shells).reduce<Record<string, Shell>>((acc, key: string) => {
         const shell = state.shells[key]
         const attractionPoint = state.places[shell.place].position;
+        if (shell.position.x === attractionPoint.x && shell.position.y === attractionPoint.y) {
+          //Animation for this shell is finished
+          return acc;
+        }
         return {
           ...acc,
           [shell.id]: getShellNextMove(shell, attractionPoint)
         }
       }, {});
 
-      dispatch({ type: 'render_move', payload: { shells: newShells } })
-    // }
+      if (Object.keys(shells).length === 0) {
+        dispatch({ type: 'stop_swapping' });
+      }
+
+      dispatch({ type: 'render_move', payload: { shells } })
+    }
   }, [tick])
 
   // Game Main Dispatcher
@@ -317,7 +334,7 @@ function App() {
         const swapOptions: ShuffleState['shuffles'] = [['a', 'b'], ['b', 'c'], ['a', 'c']];
 
         const range = (n: number) => Array.from({ length: n }, () => swapOptions[getRandomIntInclusive(0, 2)])
-        const swapTimes = getRandomIntInclusive(1, 1);
+        const swapTimes = getRandomIntInclusive(1, 3);
         const shuffles = range(swapTimes);
 
         dispatch({
@@ -367,13 +384,13 @@ function App() {
       dispatch({ type: 'start_swapping', payload: { shells, shuffles: state.shuffle.shuffles.slice(1) } });
     }
 
-    // if (state.shuffle.status === 'swapping' && state.shuffle.shuffles.length === 0) {
-    //   dispatch({ type: 'stop_swapping' });
-    // }
+    if (state.shuffle.status === 'finished' && state.shuffle.shuffles.length) {
+       dispatch({ type: 'start_next_swap' });
+    }
 
-    // if (state.shuffle.shuffles.length === 0 && state.status === 'shuffling') {
-    //   startGuessing();
-    // }
+    if (state.shuffle.shuffles.length === 0 && state.stage === 'shuffling') {
+      startGuessing();
+    }
 
   }, [dispatch, state.shuffle.shuffles, state.shuffle.status])
 
