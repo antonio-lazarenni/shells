@@ -227,9 +227,9 @@ const App: FC = () => {
         const shellClicked = Object.values(state.shells).find((shell) => {
           return (
             shell.position.x < x &&
-            x < shell.position.x + 50 &&
+            shell.position.x + 50 > x &&
             shell.position.y < y &&
-            y < shell.position.y + 50
+            shell.position.y + 50 > y
           );
         });
 
