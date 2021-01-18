@@ -292,14 +292,15 @@ const App: FC = () => {
           ctx.fillText('Click to start shuffling!', 200, 50);
           break;
         case 'shuffling':
-          ctx.fillText('Shuffling...!', 200, 50);
+          ctx.fillText('🎲 Shuffling...! 🎲', 200, 50);
           break;
         case 'guessing':
           ctx.fillText('Click on the shell!', 200, 50);
           break;
         case 'showing_result':
           {
-            const result = state.guess === 2 ? 'Awesome!' : 'Maybe next time.';
+            const result =
+              state.guess === 2 ? 'Awesome! 🎉🎉🎉' : 'Maybe next time 😓😓😓';
             ctx.fillText(result, 200, 50);
             ctx.fillText('Click to start again!', 200, 75);
           }
