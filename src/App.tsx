@@ -316,7 +316,7 @@ const App: FC = () => {
   function getShellNextMove(shell: Shell, destination: Vec2) {
     const { position } = shell;
 
-    const speed = 10;
+    const speed = 5;
 
     const dx = destination.x - position.x;
     const dy = destination.y - position.y;
@@ -400,7 +400,7 @@ const App: FC = () => {
               { length: n },
               () => swapOptions[getRandomIntInclusive(0, 2)]
             );
-          const swapTimes = getRandomIntInclusive(1, 3);
+          const swapTimes = getRandomIntInclusive(3, 6);
           const shuffles = range(swapTimes);
 
           dispatch({
