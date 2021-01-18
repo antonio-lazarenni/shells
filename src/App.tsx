@@ -35,6 +35,7 @@ interface GameState {
   shells: Record<string, Shell>;
   places: Record<string, Place>;
   ball: Ball;
+  guess: number | undefined;
 }
 
 interface GameAction {
@@ -48,12 +49,14 @@ interface GameAction {
     | 'start_swapping'
     | 'stop_swapping'
     | 'start_next_swap'
-    | 'render_move';
+    | 'render_move'
+    | 'save_guess';
   payload?: any;
 }
 
 const initialState: GameState = {
   stage: 'idle',
+  guess: undefined,
   shuffle: {
     status: 'finished', // swap status to be honest
     shuffles: [],
@@ -167,6 +170,15 @@ function reducer(state: GameState, action: GameAction): GameState {
           ...action.payload.shells,
         },
       };
+    case 'save_guess':
+      return {
+        ...state,
+        guess: action.payload,
+        shells: {
+          ...state.shells,
+          ...action.payload.shells,
+        },
+      };
     default:
       throw new Error(`Action: ${action.type}`);
   }
@@ -208,13 +220,13 @@ const App: FC = () => {
     status: 'showing_result',
   });
   const resetGame = createAction('reset');
+  const saveGuess = createAction('save_guess');
 
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
       const x = e.clientX,
         y = e.clientY;
 
-      // if (state.status === 'idle' || state.status === 'showing_result') {
       if (state.stage === 'idle') {
         startGame();
       }
@@ -234,6 +246,7 @@ const App: FC = () => {
         });
 
         if (shellClicked) {
+          saveGuess(shellClicked.id);
           showResults();
           return dispatch({ type: 'open', payload: { id: shellClicked.id } });
         }
@@ -274,7 +287,27 @@ const App: FC = () => {
       ctx.save();
       ctx.fillStyle = 'salmon';
       ctx.font = '30px Arial';
-      ctx.fillText(state.stage, 10, 50);
+      switch (state.stage) {
+        case 'idle':
+          ctx.fillText('Click to start shuffling!', 200, 50);
+          break;
+        case 'shuffling':
+          ctx.fillText('Shuffling...!', 200, 50);
+          break;
+        case 'guessing':
+          ctx.fillText('Click on the shell!', 200, 50);
+          break;
+        case 'showing_result':
+          {
+            const result = state.guess === 2 ? 'Awesome!' : 'Maybe next time.';
+            ctx.fillText(result, 200, 50);
+            ctx.fillText('Click to start again!', 200, 75);
+          }
+          break;
+
+        default:
+          break;
+      }
       ctx.restore();
     },
     [state.stage]
@@ -440,6 +473,7 @@ const App: FC = () => {
     }
 
     ctx.clearRect(0, 0, window.innerHeight, window.innerWidth);
+
     drawGameState(ctx);
 
     drawBall(ctx, state.ball);
