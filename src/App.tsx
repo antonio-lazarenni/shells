@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useReducer, useState } from 'react';
+import React, { FC, useCallback, useEffect, useReducer, useState } from 'react';
 import { Box } from 'theme-ui';
 import { useCanvas } from './ctx/CanvasContext';
 import Canvas from './components/Canvas';
@@ -197,7 +197,7 @@ const useTick = (): UseTick => {
   return { tick };
 };
 
-function App() {
+const App: FC = () => {
   const { state, dispatch, createAction } = useGameState();
   const { tick } = useTick();
   const { ctx } = useCanvas();
@@ -462,6 +462,6 @@ function App() {
       <Canvas onClick={handleCanvasClick} />
     </Box>
   );
-}
+};
 
 export default App;
