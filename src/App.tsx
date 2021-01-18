@@ -289,13 +289,13 @@ const App: FC = () => {
       ctx.font = '30px Arial';
       switch (state.stage) {
         case 'idle':
-          ctx.fillText('Click to start shuffling!', 200, 50);
+          ctx.fillText('Click to start shuffling! 😎', 200, 50);
           break;
         case 'shuffling':
           ctx.fillText('🎲 Shuffling...! 🎲', 200, 50);
           break;
         case 'guessing':
-          ctx.fillText('Click on the shell!', 200, 50);
+          ctx.fillText('Click on the shell! 👀👀👀', 200, 50);
           break;
         case 'showing_result':
           {
