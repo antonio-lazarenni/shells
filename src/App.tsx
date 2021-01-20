@@ -1,226 +1,32 @@
-import React, { FC, useCallback, useEffect, useReducer, useState } from 'react';
+import React, { FC, useCallback, useEffect } from 'react';
 import { Box } from 'theme-ui';
+import { getRandomIntInclusive, getShellNextMove } from './utils';
+
 import { useCanvas } from './ctx/CanvasContext';
+import { useTick } from './hooks/Tick';
+import { useGameState, Shell, Ball, ShuffleState } from './hooks/GameState';
+
 import Canvas from './components/Canvas';
-import { getRandomIntInclusive } from './utils';
-interface Vec2 {
-  x: number;
-  y: number;
-}
-
-interface Place {
-  id: string;
-  position: Vec2;
-}
-interface Shell {
-  id: number;
-  status: 'open' | 'close';
-  position: Vec2;
-  place: Place['id'];
-  color: string;
-}
-
-interface Ball {
-  position: Shell['id'];
-}
-
-interface ShuffleState {
-  status: 'ready' | 'swapping' | 'finished';
-  shuffles: [string, string][];
-}
-
-interface GameState {
-  stage: 'idle' | 'shuffling' | 'guessing' | 'showing_result';
-  shuffle: ShuffleState;
-  shells: Record<string, Shell>;
-  places: Record<string, Place>;
-  ball: Ball;
-  guess: number | undefined;
-}
-
-interface GameAction {
-  type:
-    | 'reset'
-    | 'change_stage'
-    | 'start'
-    | 'open'
-    | 'start_shuffle'
-    | 'stop_shuffle'
-    | 'start_swapping'
-    | 'stop_swapping'
-    | 'start_next_swap'
-    | 'render_move'
-    | 'save_guess';
-  payload?: any;
-}
-
-const initialState: GameState = {
-  stage: 'idle',
-  guess: undefined,
-  shuffle: {
-    status: 'finished', // swap status to be honest
-    shuffles: [],
-  },
-  places: {
-    a: {
-      id: 'a',
-      position: { x: 200, y: 100 },
-    },
-    b: {
-      id: 'b',
-      position: { x: 300, y: 100 },
-    },
-    c: {
-      id: 'c',
-      position: { x: 400, y: 100 },
-    },
-  },
-  shells: {
-    1: {
-      id: 1,
-      status: 'close',
-      position: { x: 200, y: 100 },
-      color: '#72d586',
-      place: 'a',
-    },
-    2: {
-      id: 2,
-      status: 'open',
-      position: { x: 300, y: 100 },
-      color: '#6674c8',
-      place: 'b',
-    },
-    3: {
-      id: 3,
-      status: 'close',
-      position: { x: 400, y: 100 },
-      color: '#76cfd5',
-      place: 'c',
-    },
-  },
-  ball: {
-    position: 2,
-  },
-};
-
-function reducer(state: GameState, action: GameAction): GameState {
-  switch (action.type) {
-    case 'reset':
-      return initialState;
-    case 'change_stage':
-      return {
-        ...state,
-        stage: action.payload.status,
-      };
-    case 'start_shuffle':
-      return {
-        ...state,
-        shells: {
-          ...action.payload.shells,
-        },
-        shuffle: {
-          status: 'ready',
-          shuffles: action.payload.shuffles,
-        },
-      };
-    case 'open':
-      return {
-        ...state,
-        shells: {
-          ...state.shells,
-          [action.payload.id]: {
-            ...state.shells[action.payload.id],
-            status: 'open',
-          },
-        },
-      };
-    case 'start_swapping':
-      return {
-        ...state,
-        shuffle: {
-          status: 'swapping',
-          shuffles: action.payload.shuffles,
-        },
-        shells: {
-          ...state.shells,
-          ...action.payload.shells,
-        },
-      };
-    case 'stop_swapping':
-      return {
-        ...state,
-        shuffle: {
-          ...state.shuffle,
-          status: 'finished',
-        },
-      };
-    case 'start_next_swap':
-      return {
-        ...state,
-        shuffle: {
-          ...state.shuffle,
-          status: 'ready',
-        },
-      };
-    case 'render_move':
-      return {
-        ...state,
-        shells: {
-          ...state.shells,
-          ...action.payload.shells,
-        },
-      };
-    case 'save_guess':
-      return {
-        ...state,
-        guess: action.payload,
-        shells: {
-          ...state.shells,
-          ...action.payload.shells,
-        },
-      };
-    default:
-      throw new Error(`Action: ${action.type}`);
-  }
-}
-
-const useGameState = () => {
-  const [state, dispatch] = useReducer(reducer, initialState);
-  const createAction = (type: GameAction['type'], p?: any) => (payload = p) =>
-    dispatch({ type, payload });
-  return {
-    state,
-    dispatch,
-    createAction,
-  };
-};
-
-interface UseTick {
-  tick: number;
-}
-
-const useTick = (): UseTick => {
-  const [tick, setTime] = useState<number>(0);
-
-  useEffect(() => {
-    window.requestAnimationFrame(() => setTime(tick + 1));
-  });
-
-  return { tick };
-};
 
 const App: FC = () => {
-  const { state, dispatch, createAction } = useGameState();
+  const {
+    state,
+    dispatch,
+    startGame,
+    startGuessing,
+    showResults,
+    resetGame,
+    saveGuess,
+    stopSwapping,
+    renderMove,
+    openShell,
+    startShuffle,
+    startSwapping,
+    startNextSwap,
+  } = useGameState();
+
   const { tick } = useTick();
   const { ctx } = useCanvas();
-
-  const startGame = createAction('change_stage', { status: 'shuffling' });
-  const startGuessing = createAction('change_stage', { status: 'guessing' });
-  const showResults = createAction('change_stage', {
-    status: 'showing_result',
-  });
-  const resetGame = createAction('reset');
-  const saveGuess = createAction('save_guess');
 
   const handleCanvasClick = useCallback(
     (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
@@ -236,19 +42,19 @@ const App: FC = () => {
       }
 
       if (state.stage === 'guessing') {
-        const shellClicked = Object.values(state.shells).find((shell) => {
+        const shell = Object.values(state.shells).find(({ position }) => {
           return (
-            shell.position.x < x &&
-            shell.position.x + 50 > x &&
-            shell.position.y < y &&
-            shell.position.y + 50 > y
+            position.x < x &&
+            position.x + 50 > x &&
+            position.y < y &&
+            position.y + 50 > y
           );
         });
 
-        if (shellClicked) {
-          saveGuess(shellClicked.id);
+        if (shell) {
+          saveGuess({ shell });
+          openShell({ shell });
           showResults();
-          return dispatch({ type: 'open', payload: { id: shellClicked.id } });
         }
       }
     },
@@ -314,34 +120,6 @@ const App: FC = () => {
     [state.stage]
   );
 
-  function getShellNextMove(shell: Shell, destination: Vec2) {
-    const { position } = shell;
-
-    const speed = 5;
-
-    const dx = destination.x - position.x;
-    const dy = destination.y - position.y;
-
-    const distance = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
-
-    const velocity = {
-      x: (speed / distance) * dx,
-      y: (speed / distance) * dy,
-    };
-
-    if (distance < 1) {
-      return shell;
-    }
-
-    return {
-      ...shell,
-      position: {
-        x: shell.position.x + velocity.x,
-        y: shell.position.y + velocity.y,
-      },
-    };
-  }
-
   // Animate
   useEffect(() => {
     if (state.shuffle.status === 'swapping') {
@@ -365,10 +143,10 @@ const App: FC = () => {
       );
 
       if (Object.keys(shells).length === 0) {
-        dispatch({ type: 'stop_swapping' });
+        stopSwapping();
       }
 
-      dispatch({ type: 'render_move', payload: { shells } });
+      renderMove({ shells });
     }
   }, [tick]);
 
@@ -403,20 +181,19 @@ const App: FC = () => {
             );
           const swapTimes = getRandomIntInclusive(3, 6);
           const shuffles = range(swapTimes);
-
-          dispatch({
-            type: 'start_shuffle',
-            payload: {
-              shells,
-              shuffles,
-            },
+          // Close all shells
+          // Put Shuffles
+          // Update state
+          startShuffle({
+            shells,
+            shuffles,
           });
         }
         break;
       case 'guessing':
         break;
       case 'showing_result':
-        dispatch({ type: 'open', payload: { id: 2 } });
+        openShell({ shell: state.shells[2] });
         break;
 
       default:
@@ -432,6 +209,7 @@ const App: FC = () => {
       const aShell = Object.values(state.shells).find(
         (shell) => shell.place === swap[0]
       );
+
       const bShell = Object.values(state.shells).find(
         (shell) => shell.place === swap[1]
       );
@@ -452,14 +230,11 @@ const App: FC = () => {
         },
       };
 
-      dispatch({
-        type: 'start_swapping',
-        payload: { shells, shuffles: state.shuffle.shuffles.slice(1) },
-      });
+      startSwapping({ shells, shuffles: state.shuffle.shuffles.slice(1) });
     }
 
     if (state.shuffle.status === 'finished' && state.shuffle.shuffles.length) {
-      dispatch({ type: 'start_next_swap' });
+      startNextSwap();
     }
 
     if (state.shuffle.shuffles.length === 0 && state.stage === 'shuffling') {

@@ -31,7 +31,7 @@ export const CanvasProvider: React.FC = (props) => {
   return <CanvasContext.Provider {...props} value={{ ctx, canvasRef }} />;
 };
 
-export const useCanvas = () => {
+export const useCanvas = (): ICanvasContext => {
   const context = useContext(CanvasContext);
   if (context === undefined) {
     throw new TypeError('useCanvas must be used within a CanvasProvider');
